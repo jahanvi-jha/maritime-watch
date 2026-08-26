@@ -1,47 +1,519 @@
-"use client"
+"use client";
 
-import dynamic from 'next/dynamic'
-import { useState } from 'react'
-import { Activity, Anchor, Bell, ChevronDown, ChevronRight, CircleHelp, Download, FileText, MapPin, PanelBottom, Radar, RefreshCw, Search, Ship, SlidersHorizontal, Sparkles, Target } from 'lucide-react'
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Progress } from '@/components/ui/progress'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-import { useIncidentAnalytics, useSpillIncidents, useVesselStream } from '@/hooks/useMaritimeData'
-import { incidents, severityClass } from '@/services/mockData'
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useState } from "react";
+import {
+  Activity,
+  Anchor,
+  Bell,
+  ChevronDown,
+  ChevronRight,
+  CircleHelp,
+  Download,
+  FileText,
+  MapPin,
+  PanelBottom,
+  Radar,
+  RefreshCw,
+  Search,
+  Ship,
+  SlidersHorizontal,
+  Sparkles,
+  Target,
+} from "lucide-react";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
+  useIncidentAnalytics,
+  useSpillIncidents,
+  useVesselStream,
+} from "@/hooks/useMaritimeData";
+import { incidents, severityClass } from "@/services/mockData";
 
-const LeafletMap = dynamic(() => import('@/components/leaflet-map'), { ssr: false, loading: () => <div className="flex h-full items-center justify-center bg-[#102b32] text-xs text-cyan-100">Loading satellite chart...</div> })
-const chartConfig: ChartConfig = { sar: { label: 'SAR intensity', color: 'var(--color-cyan)' }, yolo: { label: 'YOLO score', color: 'var(--color-coral)' } }
-const sarImageByIncident: Record<string, string> = { 'MS-260826-014': '/sar/one.png', 'MS-260826-011': '/sar/two.png', 'MS-260826-008': '/sar/three.jpg' }
-function SectionLabel({ children }: { children: React.ReactNode }) { return <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{children}</div> }
-function SeverityBadge({ severity }: { severity: string }) { return <Badge variant="outline" className={`rounded-sm px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${severityClass(severity as never)}`}>{severity}</Badge> }
-
-function MapPanel({ selectedId, onSelect }: { selectedId: string; onSelect: (id: string) => void }) {
-  return <Card className="relative min-h-[530px] overflow-hidden rounded-xl border-slate-200 bg-[#102b32] shadow-sm"><div className="absolute left-5 top-5 z-[500] flex items-center gap-2 rounded-md border border-cyan-100/20 bg-[#102b32]/90 px-3 py-2 text-[10px] font-semibold tracking-wider text-cyan-50 shadow-lg"><Radar className="size-3 text-cyan-300" /> CARTODB DARK MATTER · LIVE</div><LeafletMap selectedId={selectedId} onSelect={onSelect} /></Card>
+const LeafletMap = dynamic(() => import("@/components/leaflet-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center bg-[#102b32] text-xs text-cyan-100">
+      Loading satellite chart...
+    </div>
+  ),
+});
+const chartConfig: ChartConfig = {
+  sar: { label: "SAR intensity", color: "var(--color-cyan)" },
+  yolo: { label: "YOLO score", color: "var(--color-coral)" },
+};
+const sarImageByIncident: Record<string, string> = {
+  "MS-260826-014": "/sar/one.png",
+  "MS-260826-011": "/sar/two.png",
+  "MS-260826-008": "/sar/three.jpg",
+};
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+      {children}
+    </div>
+  );
+}
+function SeverityBadge({ severity }: { severity: string }) {
+  return (
+    <Badge
+      variant="outline"
+      className={`rounded-sm px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${severityClass(severity as never)}`}
+    >
+      {severity}
+    </Badge>
+  );
 }
 
-function IncidentQueue({ selectedId, onSelect }: { selectedId: string; onSelect: (id: string) => void }) {
-  const { incidents: items, query, setQuery, severity, setSeverity } = useSpillIncidents()
-  return <Card className="flex min-h-[530px] flex-col rounded-xl border-slate-200 shadow-sm"><CardHeader className="gap-3 pb-3"><div className="flex items-center justify-between"><CardTitle className="flex items-center gap-2 text-sm"><Bell className="size-4 text-red-500" />Incident queue <Badge className="rounded-full bg-red-100 text-red-700">{items.length}</Badge></CardTitle><Button size="icon-sm" variant="ghost"><SlidersHorizontal /></Button></div><div className="relative"><Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" /><Input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search incidents..." className="h-8 pl-8 text-xs" /></div><div className="flex gap-1"><Button onClick={() => setSeverity('ALL')} size="sm" variant={severity === 'ALL' ? 'secondary' : 'ghost'} className="h-6 px-2 text-[10px]">All</Button>{['CRITICAL', 'HIGH', 'MEDIUM'].map(s => <Button key={s} onClick={() => setSeverity(s)} size="sm" variant={severity === s ? 'secondary' : 'ghost'} className="h-6 px-2 text-[10px]">{s}</Button>)}</div></CardHeader><Separator /><ScrollArea className="flex-1"><div className="flex flex-col">{items.map(item => <button key={item.id} onClick={() => onSelect(item.id)} className={`border-b p-3 text-left transition-colors hover:bg-slate-50 ${selectedId === item.id ? 'bg-cyan-50/70' : ''}`}><div className="flex items-start justify-between gap-2"><div><div className="mb-1 text-xs font-bold text-slate-800">{item.title}</div><div className="flex items-center gap-1 text-[10px] text-muted-foreground"><MapPin className="size-3" />{item.location}</div></div><SeverityBadge severity={item.severity} /></div><div className="mt-3 flex items-center justify-between text-[10px] text-slate-500"><span>{item.detectedAt}</span><span className="font-semibold text-slate-700">{item.confidence}% confidence</span></div></button>)}</div></ScrollArea><div className="flex items-center justify-between border-t px-3 py-2 text-[10px] text-muted-foreground"><span>Last sync 08:44:02 UTC</span><RefreshCw className="size-3" /></div></Card>
+function MapPanel({
+  selectedId,
+  onSelect,
+}: {
+  selectedId: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <Card className="relative min-h-[530px] overflow-hidden rounded-xl border-slate-200 bg-[#102b32] shadow-sm">
+      <div className="absolute left-5 top-5 z-[500] flex items-center gap-2 rounded-md border border-cyan-100/20 bg-[#102b32]/90 px-3 py-2 text-[10px] font-semibold tracking-wider text-cyan-50 shadow-lg">
+        <Radar className="size-3 text-cyan-300" /> CARTODB DARK MATTER · LIVE
+      </div>
+      <LeafletMap selectedId={selectedId} onSelect={onSelect} />
+    </Card>
+  );
+}
+
+function IncidentQueue({
+  selectedId,
+  onSelect,
+}: {
+  selectedId: string;
+  onSelect: (id: string) => void;
+}) {
+  const {
+    incidents: items,
+    query,
+    setQuery,
+    severity,
+    setSeverity,
+  } = useSpillIncidents();
+  return (
+    <Card className="flex min-h-[530px] flex-col rounded-xl border-slate-200 shadow-sm">
+      <CardHeader className="gap-3 pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Bell className="size-4 text-red-500" />
+            Incident queue{" "}
+            <Badge className="rounded-full bg-red-100 text-red-700">
+              {items.length}
+            </Badge>
+          </CardTitle>
+          <Button size="icon-sm" variant="ghost">
+            <SlidersHorizontal />
+          </Button>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search incidents..."
+            className="h-8 pl-8 text-xs"
+          />
+        </div>
+        <div className="flex gap-1">
+          <Button
+            onClick={() => setSeverity("ALL")}
+            size="sm"
+            variant={severity === "ALL" ? "secondary" : "ghost"}
+            className="h-6 px-2 text-[10px]"
+          >
+            All
+          </Button>
+          {["CRITICAL", "HIGH", "MEDIUM"].map((s) => (
+            <Button
+              key={s}
+              onClick={() => setSeverity(s)}
+              size="sm"
+              variant={severity === s ? "secondary" : "ghost"}
+              className="h-6 px-2 text-[10px]"
+            >
+              {s}
+            </Button>
+          ))}
+        </div>
+      </CardHeader>
+      <Separator />
+      <ScrollArea className="flex-1">
+        <div className="flex flex-col">
+          {items.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => onSelect(item.id)}
+              className={`border-b p-3 text-left transition-colors hover:bg-slate-50 ${selectedId === item.id ? "bg-cyan-50/70" : ""}`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="mb-1 text-xs font-bold text-slate-800">
+                    {item.title}
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <MapPin className="size-3" />
+                    {item.location}
+                  </div>
+                </div>
+                <SeverityBadge severity={item.severity} />
+              </div>
+              <div className="mt-3 flex items-center justify-between text-[10px] text-slate-500">
+                <span>{item.detectedAt}</span>
+                <span className="font-semibold text-slate-700">
+                  {item.confidence}% confidence
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </ScrollArea>
+      <div className="flex items-center justify-between border-t px-3 py-2 text-[10px] text-muted-foreground">
+        <span>Last sync 08:44:02 UTC</span>
+        <RefreshCw className="size-3" />
+      </div>
+    </Card>
+  );
 }
 
 function IncidentDossier({ id }: { id: string }) {
-  const { incident } = useIncidentAnalytics(id); const { vessels } = useVesselStream(); const nearby = vessels.filter(v => incident.vessels.includes(v.name))
-  return <Card className="rounded-xl border-slate-200 shadow-sm"><CardHeader className="pb-3"><div className="flex items-start justify-between"><div><SectionLabel><Target className="size-3 text-red-500" /> Selected incident</SectionLabel><CardTitle className="mt-2 text-base">{incident.id}</CardTitle><p className="text-xs text-muted-foreground">{incident.location}</p></div><SeverityBadge severity={incident.severity} /></div></CardHeader><CardContent className="flex flex-col gap-4 text-xs"><div className="rounded-lg border border-red-100 bg-red-50/60 p-3"><div className="flex items-center justify-between"><span className="font-semibold text-red-900">{incident.title}</span><span className="font-mono text-red-700">{incident.areaKm2} km²</span></div><p className="mt-2 leading-relaxed text-red-900/70">{incident.description}</p></div><div className="grid grid-cols-2 gap-2"><div className="rounded border p-2"><span className="block text-[9px] uppercase tracking-wider text-muted-foreground">Confidence</span><b className="text-lg text-cyan-700">{incident.confidence}%</b></div><div className="rounded border p-2"><span className="block text-[9px] uppercase tracking-wider text-muted-foreground">Source model</span><b className="text-xs">{incident.source.split(' / ')[1]}</b></div></div><div><SectionLabel>Ingestion pipeline</SectionLabel><div className="mt-3 flex flex-col gap-2">{incident.ingestion.map(stage => <div key={stage.label}><div className="mb-1 flex justify-between text-[10px]"><span>{stage.done ? '✓ ' : ''}{stage.label}</span><span>{stage.value}%</span></div><Progress value={stage.value} className="h-1.5" /></div>)}</div></div><div><SectionLabel>Nearby vessel correlation</SectionLabel><div className="mt-2 flex flex-col gap-2">{nearby.map(v => <div key={v.id} className="flex items-center justify-between rounded border p-2"><span className="flex items-center gap-2"><Ship className="size-3 text-cyan-700" /><span><b className="block text-[10px]">{v.name}</b><small className="text-muted-foreground">{v.distance} · {v.speed} kn</small></span></span><SeverityBadge severity={v.risk} /></div>)}</div></div><Dialog><DialogTrigger render={<Button className="w-full bg-slate-900 text-xs hover:bg-slate-800" />}><FileText data-icon="inline-start" />Generate incident report</DialogTrigger><DialogContent className="sm:max-w-lg"><DialogHeader><DialogTitle>Incident report preview</DialogTitle><DialogDescription>Structured export for {incident.id}. Ready for analyst review.</DialogDescription></DialogHeader><div className="rounded-lg bg-slate-950 p-4 font-mono text-[10px] leading-relaxed text-cyan-100">{JSON.stringify({ id: incident.id, status: incident.status, location: incident.location, confidence: incident.confidence, areaKm2: incident.areaKm2 }, null, 2)}</div><DialogFooter><Button variant="outline">Export JSON</Button><Button><Download data-icon="inline-start" />PDF-ready brief</Button></DialogFooter></DialogContent></Dialog></CardContent></Card>
+  const { incident } = useIncidentAnalytics(id);
+  const { vessels } = useVesselStream();
+  const nearby = vessels.filter((v) => incident.vessels.includes(v.name));
+  return (
+    <Card className="rounded-xl border-slate-200 shadow-sm">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div>
+            <SectionLabel>
+              <Target className="size-3 text-red-500" /> Selected incident
+            </SectionLabel>
+            <CardTitle className="mt-2 text-base">{incident.id}</CardTitle>
+            <p className="text-xs text-muted-foreground">{incident.location}</p>
+          </div>
+          <SeverityBadge severity={incident.severity} />
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4 text-xs">
+        <div className="rounded-lg border border-red-100 bg-red-50/60 p-3">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-red-900">{incident.title}</span>
+            <span className="font-mono text-red-700">
+              {incident.areaKm2} km²
+            </span>
+          </div>
+          <p className="mt-2 leading-relaxed text-red-900/70">
+            {incident.description}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded border p-2">
+            <span className="block text-[9px] uppercase tracking-wider text-muted-foreground">
+              Confidence
+            </span>
+            <b className="text-lg text-cyan-700">{incident.confidence}%</b>
+          </div>
+          <div className="rounded border p-2">
+            <span className="block text-[9px] uppercase tracking-wider text-muted-foreground">
+              Source model
+            </span>
+            <b className="text-xs">{incident.source.split(" / ")[1]}</b>
+          </div>
+        </div>
+        <div>
+          <SectionLabel>Ingestion pipeline</SectionLabel>
+          <div className="mt-3 flex flex-col gap-2">
+            {incident.ingestion.map((stage) => (
+              <div key={stage.label}>
+                <div className="mb-1 flex justify-between text-[10px]">
+                  <span>
+                    {stage.done ? "✓ " : ""}
+                    {stage.label}
+                  </span>
+                  <span>{stage.value}%</span>
+                </div>
+                <Progress value={stage.value} className="h-1.5" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <SectionLabel>Nearby vessel correlation</SectionLabel>
+          <div className="mt-2 flex flex-col gap-2">
+            {nearby.map((v) => (
+              <div
+                key={v.id}
+                className="flex items-center justify-between rounded border p-2"
+              >
+                <span className="flex items-center gap-2">
+                  <Ship className="size-3 text-cyan-700" />
+                  <span>
+                    <b className="block text-[10px]">{v.name}</b>
+                    <small className="text-muted-foreground">
+                      {v.distance} · {v.speed} kn
+                    </small>
+                  </span>
+                </span>
+                <SeverityBadge severity={v.risk} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <Dialog>
+          <DialogTrigger
+            render={
+              <Button className="w-full bg-slate-900 text-xs hover:bg-slate-800" />
+            }
+          >
+            <FileText data-icon="inline-start" />
+            Generate incident report
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Incident report preview</DialogTitle>
+              <DialogDescription>
+                Structured export for {incident.id}. Ready for analyst review.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="rounded-lg bg-slate-950 p-4 font-mono text-[10px] leading-relaxed text-cyan-100">
+              {JSON.stringify(
+                {
+                  id: incident.id,
+                  status: incident.status,
+                  location: incident.location,
+                  confidence: incident.confidence,
+                  areaKm2: incident.areaKm2,
+                },
+                null,
+                2,
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline">Export JSON</Button>
+              <Button>
+                <Download data-icon="inline-start" />
+                PDF-ready brief
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
+  );
 }
 
-function AnalyticsDrawer({ id, open, onToggle }: { id: string; open: boolean; onToggle: () => void }) {
-  const { incident, transectData } = useIncidentAnalytics(id)
-  return <div className={`absolute bottom-0 left-0 right-0 z-10 border-t border-slate-200 bg-white/95 shadow-[0_-8px_24px_rgba(15,40,48,.08)] backdrop-blur transition-transform ${open ? 'translate-y-0' : 'translate-y-[calc(100%-40px)]'}`}><button onClick={onToggle} className="flex h-10 w-full items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-600"><PanelBottom className="size-3" />{open ? 'Hide analytics' : 'Open analytics drawer'}<ChevronDown className={`size-3 transition-transform ${open ? 'rotate-180' : ''}`} /></button><div className="mx-auto grid max-w-6xl gap-5 px-5 pb-5 lg:grid-cols-[1fr_1.4fr]"><div><SectionLabel><Sparkles className="size-3 text-cyan-700" /> Raw SAR acquisition</SectionLabel><div className="relative mt-3 h-28 overflow-hidden rounded-md border border-slate-700 bg-slate-800"><img src={sarImageByIncident[incident.id]} alt={`Raw Sentinel-1 SAR image for ${incident.id}`} className="size-full object-cover" /><span className="absolute left-2 top-2 rounded bg-slate-950/80 px-1.5 py-1 text-[9px] font-bold text-white">RAW SAR · {incident.sar.polarization}</span><div className="absolute bottom-0 left-0 right-0 flex justify-between bg-slate-950/75 px-2 py-1 text-[9px] text-white/85"><span>Sentinel-1 · {incident.sar.scene}</span><span>{incident.sar.acquisition}</span></div></div></div><div><SectionLabel><Activity className="size-3 text-cyan-700" /> Transect profile · {incident.id}</SectionLabel><ChartContainer config={chartConfig} className="mt-2 h-32 w-full"><LineChart accessibilityLayer data={transectData} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}><CartesianGrid vertical={false} strokeDasharray="3 3" /><XAxis dataKey="distance" tickLine={false} axisLine={false} tick={{ fontSize: 9 }} /><YAxis hide /><ChartTooltip content={<ChartTooltipContent />} /><Line type="monotone" dataKey="sar" stroke="var(--color-cyan)" strokeWidth={2} dot={false} /><Line type="monotone" dataKey="yolo" stroke="var(--color-coral)" strokeWidth={2} dot={false} /></LineChart></ChartContainer></div></div></div>
+function AnalyticsDrawer({
+  id,
+  open,
+  onToggle,
+}: {
+  id: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const { incident, transectData } = useIncidentAnalytics(id);
+  return (
+    <div
+      className={`absolute bottom-0 left-0 right-0 z-10 border-t border-slate-200 bg-white/95 shadow-[0_-8px_24px_rgba(15,40,48,.08)] backdrop-blur transition-transform ${open ? "translate-y-0" : "translate-y-[calc(100%-40px)]"}`}
+    >
+      <button
+        onClick={onToggle}
+        className="flex h-10 w-full items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-600"
+      >
+        <PanelBottom className="size-3" />
+        {open ? "Hide analytics" : "Open analytics drawer"}
+        <ChevronDown
+          className={`size-3 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      <div className="mx-auto grid max-w-6xl gap-5 px-5 pb-5 lg:grid-cols-[1fr_1.4fr]">
+        <div>
+          <SectionLabel>
+            <Sparkles className="size-3 text-cyan-700" /> Raw SAR acquisition
+          </SectionLabel>
+          <div className="relative mt-3 h-28 overflow-hidden rounded-md border border-slate-700 bg-slate-800">
+            <img
+              src={sarImageByIncident[incident.id]}
+              alt={`Raw Sentinel-1 SAR image for ${incident.id}`}
+              className="size-full object-cover"
+            />
+            <span className="absolute left-2 top-2 rounded bg-slate-950/80 px-1.5 py-1 text-[9px] font-bold text-white">
+              RAW SAR · {incident.sar.polarization}
+            </span>
+            <div className="absolute bottom-0 left-0 right-0 flex justify-between bg-slate-950/75 px-2 py-1 text-[9px] text-white/85">
+              <span>Sentinel-1 · {incident.sar.scene}</span>
+              <span>{incident.sar.acquisition}</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <SectionLabel>
+            <Activity className="size-3 text-cyan-700" /> Transect profile ·{" "}
+            {incident.id}
+          </SectionLabel>
+          <ChartContainer config={chartConfig} className="mt-2 h-32 w-full">
+            <LineChart
+              accessibilityLayer
+              data={transectData}
+              margin={{ left: 0, right: 8, top: 4, bottom: 0 }}
+            >
+              <CartesianGrid vertical={false} strokeDasharray="3 3" />
+              <XAxis
+                dataKey="distance"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 9 }}
+              />
+              <YAxis hide />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Line
+                type="monotone"
+                dataKey="sar"
+                stroke="var(--color-cyan)"
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="yolo"
+                stroke="var(--color-coral)"
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ChartContainer>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function MaritimeDashboard() {
-  const [selectedId, setSelectedId] = useState(incidents[0].id); const [analyticsOpen, setAnalyticsOpen] = useState(true); const [leftOpen, setLeftOpen] = useState(true); const [rightOpen, setRightOpen] = useState(true); const { connected } = useVesselStream()
-  return <main className="min-h-screen bg-[#f5f8f7] text-slate-900"><header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-6"><div className="flex items-center gap-3"><div className="flex size-8 items-center justify-center rounded-md bg-slate-900 text-cyan-300"><Anchor className="size-4" /></div><div><div className="text-xs font-black tracking-[0.12em]">MARISCOPE <span className="font-normal text-muted-foreground">/ COMMAND</span></div><div className="hidden text-[9px] uppercase tracking-widest text-muted-foreground sm:block">AI-powered maritime intelligence</div></div></div><div className="hidden items-center gap-5 text-[10px] font-semibold text-muted-foreground md:flex"><span className="flex items-center gap-1.5"><i className="size-1.5 animate-pulse rounded-full bg-emerald-500" /> SYSTEM OPERATIONAL</span><span>26 AUG 2026 · 08:44 UTC</span><span>SECTOR 07 / WESTERN PACIFIC</span></div><div className="flex items-center gap-1"><Button variant="ghost" size="icon-sm"><CircleHelp /></Button><Button variant="ghost" size="icon-sm"><Bell /></Button><div className="ml-2 flex size-7 items-center justify-center rounded-full bg-cyan-100 text-[10px] font-bold text-cyan-800">AO</div></div></header><div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2 lg:px-6"><div className="flex items-center gap-2 text-[10px] text-muted-foreground"><span className="font-bold text-slate-700">OPERATIONS</span><ChevronRight className="size-3" /> <span>LIVE SURVEILLANCE</span></div><div className="flex items-center gap-3 text-[10px] text-muted-foreground"><span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-emerald-500" /> AIS STREAM {connected ? 'CONNECTED' : 'OFFLINE'}</span><Button variant="outline" size="sm" className="h-7 text-[10px]"><RefreshCw data-icon="inline-start" /> Sync data</Button></div></div><div className="relative flex min-h-[calc(100vh-99px)] flex-col gap-3 overflow-hidden p-3 lg:p-4"><div className="grid items-stretch gap-3 md:grid-cols-[240px_minmax(380px,1fr)_280px]"><div className={`${leftOpen ? 'block' : 'hidden'} md:block`}><IncidentQueue selectedId={selectedId} onSelect={setSelectedId} /></div><div className="relative order-first min-h-[530px] lg:order-none"><MapPanel selectedId={selectedId} onSelect={setSelectedId} /><button onClick={() => setLeftOpen(!leftOpen)} className="absolute left-2 top-1/2 hidden rounded-r-md border bg-white/90 p-1 text-muted-foreground shadow lg:block"><ChevronRight className={`size-4 transition-transform ${leftOpen ? 'rotate-180' : ''}`} /></button><button onClick={() => setRightOpen(!rightOpen)} className="absolute right-2 top-1/2 hidden rounded-l-md border bg-white/90 p-1 text-muted-foreground shadow lg:block"><ChevronRight className={`size-4 transition-transform ${rightOpen ? '' : 'rotate-180'}`} /></button></div><div className={`${rightOpen ? 'block' : 'hidden'} md:block`}><IncidentDossier id={selectedId} /></div></div><AnalyticsDrawer id={selectedId} open={analyticsOpen} onToggle={() => setAnalyticsOpen(!analyticsOpen)} /></div></main>
+  const [selectedId, setSelectedId] = useState(incidents[0].id);
+  const [analyticsOpen, setAnalyticsOpen] = useState(true);
+  const [leftOpen, setLeftOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
+  const { connected } = useVesselStream();
+  return (
+    <main className="min-h-screen bg-[#f5f8f7] text-slate-900">
+      <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-6">
+        <div className="flex items-center gap-3">
+          <div className="flex size-8 items-center justify-center rounded-md bg-slate-900 text-cyan-300">
+            <Anchor className="size-4" />
+          </div>
+          <div>
+            <div className="text-xs font-black tracking-[0.12em]">
+              MARISCOPE{" "}
+              <span className="font-normal text-muted-foreground">
+                / COMMAND
+              </span>
+            </div>
+            <div className="hidden text-[9px] uppercase tracking-widest text-muted-foreground sm:block">
+              AI-powered maritime intelligence
+            </div>
+          </div>
+        </div>
+        <nav className="flex items-center gap-0">
+          <Link href="/" className="border-b-2 border-cyan-600 px-2 py-4 text-[9px] font-bold uppercase tracking-wider text-slate-800 lg:px-3 lg:text-[10px]">Command</Link>
+          <Link href="/investigation" className="border-b-2 border-transparent px-2 py-4 text-[9px] font-bold uppercase tracking-wider text-muted-foreground hover:text-slate-800 lg:px-3 lg:text-[10px]">Investigation</Link>
+          <Link href="/attribution" className="border-b-2 border-transparent px-2 py-4 text-[9px] font-bold uppercase tracking-wider text-muted-foreground hover:text-slate-800 lg:px-3 lg:text-[10px]">Attribution</Link>
+        </nav>
+        <div className="hidden items-center gap-5 text-[10px] font-semibold text-muted-foreground md:flex">
+          <span className="flex items-center gap-1.5">
+            <i className="size-1.5 animate-pulse rounded-full bg-emerald-500" />{" "}
+            SYSTEM OPERATIONAL
+          </span>
+          <span>26 AUG 2026 · 08:44 UTC</span>
+          <span>SECTOR 07 / WESTERN PACIFIC</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon-sm">
+            <CircleHelp />
+          </Button>
+          <Button variant="ghost" size="icon-sm">
+            <Bell />
+          </Button>
+          <div className="ml-2 flex size-7 items-center justify-center rounded-full bg-cyan-100 text-[10px] font-bold text-cyan-800">
+            AO
+          </div>
+        </div>
+      </header>
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2 lg:px-6">
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <span className="font-bold text-slate-700">OPERATIONS</span>
+          <ChevronRight className="size-3" /> <span>LIVE SURVEILLANCE</span>
+        </div>
+        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full bg-emerald-500" /> AIS STREAM{" "}
+            {connected ? "CONNECTED" : "OFFLINE"}
+          </span>
+          <Button variant="outline" size="sm" className="h-7 text-[10px]">
+            <RefreshCw data-icon="inline-start" /> Sync data
+          </Button>
+        </div>
+      </div>
+      <div className="relative flex min-h-[calc(100vh-99px)] flex-col gap-3 overflow-hidden p-3 lg:p-4">
+        <div className="grid items-stretch gap-3 md:grid-cols-[240px_minmax(380px,1fr)_280px]">
+          <div className={`${leftOpen ? "block" : "hidden"} md:block`}>
+            <IncidentQueue selectedId={selectedId} onSelect={setSelectedId} />
+          </div>
+          <div className="relative order-first min-h-[530px] lg:order-none">
+            <MapPanel selectedId={selectedId} onSelect={setSelectedId} />
+            <button
+              onClick={() => setLeftOpen(!leftOpen)}
+              className="absolute left-2 top-1/2 hidden rounded-r-md border bg-white/90 p-1 text-muted-foreground shadow lg:block"
+            >
+              <ChevronRight
+                className={`size-4 transition-transform ${leftOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            <button
+              onClick={() => setRightOpen(!rightOpen)}
+              className="absolute right-2 top-1/2 hidden rounded-l-md border bg-white/90 p-1 text-muted-foreground shadow lg:block"
+            >
+              <ChevronRight
+                className={`size-4 transition-transform ${rightOpen ? "" : "rotate-180"}`}
+              />
+            </button>
+          </div>
+          <div className={`${rightOpen ? "block" : "hidden"} md:block`}>
+            <IncidentDossier id={selectedId} />
+          </div>
+        </div>
+        <AnalyticsDrawer
+          id={selectedId}
+          open={analyticsOpen}
+          onToggle={() => setAnalyticsOpen(!analyticsOpen)}
+        />
+      </div>
+    </main>
+  );
 }

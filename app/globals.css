@@ -172,5 +172,16 @@
 .ais-vessel-icon { background: transparent; border: 0; }
 .hazard-pulse { animation: hazard-pulse 2.4s ease-in-out infinite; }
 .hazard-pulse-ring { animation: hazard-pulse-ring 2.4s ease-out infinite; transform-origin: center; }
+.origin-marker, .waypoint-marker { display: flex; align-items: center; justify-content: center; border: 2px solid #f8fafc; border-radius: 999px; background: #dc2626; color: #fff; font: 700 10px/1 ui-monospace, SFMono-Regular, monospace; box-shadow: 0 0 0 2px rgb(220 38 38 / 45%); }
+.waypoint-marker { background: #16a34a; box-shadow: 0 0 0 2px rgb(22 163 74 / 45%); }
+.authority-light [class*="bg-[#1e293b]"] { background-color: #ffffff !important; }
+.authority-light [class*="bg-[#0f172a]"], .authority-light [class*="bg-[#111827]"], .authority-light [class*="bg-slate-950"] { background-color: #f1f5f9 !important; }
+.authority-light [class*="border-slate-700"] { border-color: #cbd5e1 !important; }
+.authority-light [class*="text-slate-100"] { color: #0f172a !important; }
+.authority-light [class*="text-slate-300"] { color: #334155 !important; }
+.authority-light [class*="text-slate-400"] { color: #64748b !important; }
+.authority-light [class*="text-slate-500"] { color: #64748b !important; }
+.authority-light [class*="bg-green-900"] { background-color: #dcfce7 !important; }
+.authority-light [class*="text-green-300"] { color: #166534 !important; }
 @keyframes hazard-pulse { 0%, 100% { opacity: .7; } 50% { opacity: 1; } }
 @keyframes hazard-pulse-ring { 0%, 100% { opacity: .25; } 50% { opacity: .8; } }

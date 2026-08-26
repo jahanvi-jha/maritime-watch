@@ -1,5 +1,5 @@
-import MaritimeDashboard from '@/components/maritime-dashboard'
+import InvestigationDashboard from '@/components/investigation-dashboard'
 
 export default function Page() {
-  return <MaritimeDashboard />
+  return <InvestigationDashboard />
 }
