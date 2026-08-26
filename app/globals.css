@@ -47,6 +47,8 @@
 
 :root {
   color-scheme: light;
+  --color-cyan: #10a7a0;
+  --color-coral: #ef5a4f;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
