@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+@import 'leaflet/dist/leaflet.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -163,3 +164,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+.leaflet-container { font-family: inherit; background: #e6efed; }
+.leaflet-control-zoom a { color: #102b32; }
+.leaflet-control-attribution { background: rgb(255 255 255 / 82%) !important; color: #516568; }
+.leaflet-control-attribution a { color: #176b70; }
+.ais-vessel-icon { background: transparent; border: 0; }
+.hazard-pulse { animation: hazard-pulse 2.4s ease-in-out infinite; }
+.hazard-pulse-ring { animation: hazard-pulse-ring 2.4s ease-out infinite; transform-origin: center; }
+@keyframes hazard-pulse { 0%, 100% { opacity: .7; } 50% { opacity: 1; } }
+@keyframes hazard-pulse-ring { 0%, 100% { opacity: .25; } 50% { opacity: .8; } }
