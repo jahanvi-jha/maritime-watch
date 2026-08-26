@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   Activity,
@@ -12,6 +13,7 @@ import {
   CircleHelp,
   Download,
   FileText,
+  LogOut,
   MapPin,
   PanelBottom,
   Radar,
@@ -35,6 +37,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -51,6 +61,7 @@ import {
   useVesselStream,
 } from "@/hooks/useMaritimeData";
 import { incidents, severityClass } from "@/services/mockData";
+import { AUTH_STORAGE_KEY } from "@/components/auth-guard";
 
 const LeafletMap = dynamic(() => import("@/components/leaflet-map"), {
   ssr: false,
@@ -416,6 +427,7 @@ function AnalyticsDrawer({
 }
 
 export default function MaritimeDashboard() {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState(incidents[0].id);
   const [analyticsOpen, setAnalyticsOpen] = useState(true);
   const [leftOpen, setLeftOpen] = useState(true);
@@ -460,9 +472,23 @@ export default function MaritimeDashboard() {
           <Button variant="ghost" size="icon-sm">
             <Bell />
           </Button>
-          <div className="ml-2 flex size-7 items-center justify-center rounded-full bg-cyan-100 text-[10px] font-bold text-cyan-800">
-            AO
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="ml-2 flex size-7 items-center justify-center rounded-full bg-cyan-100 text-[10px] font-bold text-cyan-800">
+              AO
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Analyst account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  localStorage.removeItem(AUTH_STORAGE_KEY);
+                  router.push("/login");
+                }}
+              >
+                <LogOut /> Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2 lg:px-6">
